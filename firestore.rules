@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========== FUNCIONES HELPER ==========
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'admin@centinela.com' ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin')
+      );
+    }
+    
+    // ========== REGLAS GLOBALES DE LECTURA ==========
+    
+    // Puestos y Municipios: Lectura pública necesaria para el registro de nuevos testigos
+    // Estructura: municipios/{id}/puestos/{id} y municipios/{id}/mesas/{id}
+    match /municipios/{municipioId} {
+      allow read: if true;
+      match /puestos/{puestoId} {
+        allow read, list: if true;
+      }
+      match /mesas/{mesaId} {
+        allow read, list: if true;
+      }
+      // Escritura solo para admins
+      allow write: if isAdmin();
+    }
+
+    // Ruta alternativa (si se usa la colección raíz directamente)
+    match /puestos/{doc} {
+      allow read, list: if true;
+    }
+
+    // Cualquier otro documento requiere estar autenticado.
+    match /{allPaths=**} {
+      allow read, list: if isAuthenticated();
+    }
+    
+    // ========== REGLAS DE ESCRITURA PROTEGIDAS ==========
+    
+    // Usuarios: Solo el propio usuario puede crear su perfil inicial. Solo admins pueden autorizar.
+    match /usuarios/{userId} {
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId && 
+                                   request.resource.data.autorizado == resource.data.autorizado);
+      allow delete: if isAdmin();
+    }
+    
+    // Conteos: Solo usuarios autenticados pueden crear reportes. Solo admins pueden borrar.
+    match /conteos/{mesaId} {
+      allow create, update: if isAuthenticated(); 
+      allow delete: if isAdmin();
+    }
+    
+    // Permitir guardar fotos en subcolección (Desanidado para mayor claridad y seguridad)
+    match /conteos/{mesaId}/fotos/{photoId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Estadísticas y Config: Solo admins modifican configuraciones.
+    match /estadisticas/{doc} { 
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); 
+    }
+    match /municipios/{municipioId}/puestos/{puestoId} {
+      allow update: if isAuthenticated() && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mesasContabilizadas']);
+    }
+    match /municipios/{doc=**} { allow write: if isAdmin(); }
+    match /municipio/{doc=**} { allow write: if isAdmin(); }
+    
+    // Auditoría
+    match /auditoria/{logId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
