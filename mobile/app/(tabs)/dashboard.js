@@ -34,7 +34,7 @@ export default function Dashboard() {
                     <View className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
                         <View className="flex-row justify-between items-start">
                             <View className="flex-1">
-                                <Text className="text-slate-500 text-sm mb-1">Bienvenido,</Text>
+                                <Text className="text-slate-500 text-sm mb-1">Bienvenido a Centinela,</Text>
                                 <Text className="text-xl font-bold text-slate-900" numberOfLines={1}>
                                     {userData?.nombre || currentUser?.email}
                                 </Text>

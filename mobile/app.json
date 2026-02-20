@@ -23,6 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.centinela.app"
@@ -40,6 +41,9 @@
       "eas": {
         "projectId": "5a50cd33-a0e4-4ab2-b1c6-969738300255"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5a50cd33-a0e4-4ab2-b1c6-969738300255"
     }
   }
 }
